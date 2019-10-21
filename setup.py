@@ -3,8 +3,8 @@
 from setuptools import setup, Extension
 
 setup(name='Flood Tool',
-      version='1.0',
+      version='0.0',
       description='Flood Risk Analysis Tool',
-      author='AMCG project',
+      author='<to be written>',
       packages=['flood_tool'],
      )
