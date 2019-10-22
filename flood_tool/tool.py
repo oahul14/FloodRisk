@@ -133,7 +133,41 @@ class Tool(object):
             data column is named `Probability Band`. Invalid postcodes and duplicates
             are removed.
         """
-        raise NotImplementedError
+        #import probability
+        lat_lon = self.get_lat_long(postcodes)
+        latitude = lat_lon[:, 0]
+        longitude = lat_lon[:, 1]
+        easting, northing = geo.get_easting_northing_from_lat_long(\
+            latitude, longitude, radians=False)
+        probability = pd.DataFrame(self.get_easting_northing_flood_probability(easting, northing))
+        probability.columns = ['Probability Band']
+
+        # import postcode
+        postcodes = pd.DataFrame(postcodes)
+        postcodes.columns = ['Postcode']
+
+        # join two data frames
+        postcode = pd.concat([postcodes, probability])
+        postcodes = postcodes.set_index('Postcode')
+        postcode = postcode[postcode['Postcode'] != 'numpy.nan']
+        postcode = postcode.drop_duplicates(['Postcode'], keep='last')
+        
+        # format the postcode
+        postcode['outward'] = postcode['Postcode'].apply(lambda x: x[0:4])
+        postcode['outward'] = postcode['outward'].str.replace(" ", "")
+        postcode['inward'] = postcode['Postcode'].apply(lambda x: x[4:7])
+        postcode['Postcode'] = postcode['outward'] + ' ' + postcode['inward']
+        postcode = postcode.drop('outward', 1)
+        postcode = postcode.drop('inward', 1)
+
+        # custom sorting
+        postcode['Probability Band'] = pd.Categorical(postcode['Probability Band'], ["High", "Medium", "Low", "Very Low", "Zero"])
+
+        # sort my column then index
+        postcode = postcode.sort_values(by=['Probability Band', 'Postcode'])
+        postcode = postcode.set_index('Postcode')
+
+        return postcode
 
 
     def get_flood_cost(self, postcodes, probability_bands):
@@ -195,4 +229,34 @@ class Tool(object):
             `Postcode` and the data column `Flood Risk`.
             Invalid postcodes and duplicates are removed.
         """
-        raise NotImplementedError
+        # import risk
+        lat_lon = self.get_lat_long(postcodes)
+        latitude = lat_lon[:, 0]
+        longitude = lat_lon[:, 1]
+        easting, northing = geo.get_easting_northing_from_lat_long(latitude, longitude, radians=False)
+        probability_bands = self.get_easting_northing_flood_probability(easting, northing)
+        risk = pd.DataFrame(self.get_annual_flood_risk(postcodes, probability_bands))
+        risk.columns = ['Flood Risk']
+
+        # import postcode
+        postcodes = pd.DataFrame(postcodes)
+        postcodes.columns = ['Postcode']
+
+        # join two data frames
+        postcode = pd.concat([postcodes, risk])
+        postcodes = postcodes.set_index('Postcode')
+        postcode = postcode[postcode['Postcode'] != 'numpy.nan']
+        postcode = postcode.drop_duplicates(['Postcode'], keep='last')
+        
+        # format the postcode
+        postcode['outward'] = postcode['Postcode'].apply(lambda x: x[0:4])
+        postcode['outward'] = postcode['outward'].str.replace(" ","")
+        postcode['inward'] = postcode['Postcode'].apply(lambda x: x[4:7])
+        postcode['Postcode'] = postcode['outward'] + ' ' + postcode['inward']
+        postcode = postcode.drop('outward', 1)
+        postcode = postcode.drop('inward', 1)
+
+        # sort my column then index
+        postcode = postcode.sort_values(by=['Probability Band', 'Postcode'], ascending=[False, True])
+        postcode = postcode.set_index('Postcode')
+        return postcode
