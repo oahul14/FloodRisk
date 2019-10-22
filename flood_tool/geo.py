@@ -259,5 +259,5 @@ def get_easting_northing_from_lat_long(latitude, longitude, radians=False):
     return E_OS, N_OS 
 
 
-results = (get_easting_northing_from_lat_long(np.array([51.19707,51.271972]),np.array([1.385194,0.565622])))
-print(results[0])
+# results = (get_easting_northing_from_lat_long(np.array([51.19707,51.271972]),np.array([1.385194,0.565622])))
+# print(results[0])
