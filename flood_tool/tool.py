@@ -20,6 +20,9 @@ class Tool(object):
         postcode_file : str, optional
             Filename of a .csv file containing property value data for postcodes.
         """
+        self.postcode_file = pd.read_csv('../flood_tool/resources/postcodes.csv')
+        self.risk_file = pd.read_csv('../flood_tool/resources/flood_probability.csv')
+        self.values_file = pd.read_csv('../flood_tool/resources/property_value.csv')
         pass
 
 
@@ -39,8 +42,27 @@ class Tool(object):
             Array of Nx2 (latitude, longitdue) pairs for the input postcodes.
             Invalid postcodes return [`numpy.nan`, `numpy.nan`].
         """
+        def clean_postcodes(postcode):
+            if len(postcode) == 8 and ' ' in postcode:
+                return postcode.replace(' ', '')
+            elif len(postcode) == 6 and ' ' not in postcode:
+                return postcode[:3]+' '+postcode[3:]
+            return postcode
+        
+        postcode_base = self.postcode_file
+        postcode_base['Postcode'] = postcode_base['Postcode']
 
-        raise NotImplementedError
+        postcodes = np.char.upper(postcodes.astype(str))
+        postcodes = np.vectorize(clean_postcodes)(postcodes)
+        select_df = postcode_base[postcode_base.isin(postcodes)['Postcode']]
+        
+        select_df = select_df.set_index(['Postcode'])
+        latlng = pd.DataFrame(columns=('Latitude', 'Longitude'))
+        postcodes_df = pd.DataFrame(postcodes)
+        check_df = pd.concat([postcodes_df, latlng]).set_index([0]) 
+        check_df.update(select_df)
+
+        return check_df.values
 
 
     def get_easting_northing_flood_probability_band(self, easting, northing):
@@ -64,7 +86,30 @@ class Tool(object):
         numpy.ndarray of strs
             numpy array of flood probability bands corresponding to input locations.
         """
-        raise NotImplementedError
+        amount = len(easting)
+        prob_df = self.risk_file
+
+        easting = easting.reshape(1, len(easting))
+        XT = prob_df['X'].values.reshape(1, len(prob_df['X'])).T
+        XT_easting = (XT-easting)*(XT-easting)
+
+        northing = northing.reshape(1, len(northing))
+        YT = prob_df['Y'].values.reshape(1, len(prob_df['X'])).T
+        YT_northing = (YT-northing)*(YT-northing)
+        point_dist = XT_easting+YT_northing
+
+        radius_range = prob_df['radius'].apply(lambda rad: rad*rad).values
+        radius_range = radius_range.reshape(len(radius_range), 1)        
+        prob = prob_df.loc[:, ['prob_4band']]
+        prob = prob.replace(['High', 'Medium', 'Low', 'Very Low'], [4, 3, 2, 1]).values
+        col_names = ['Postcode'+str(i+1) for i in range(amount)]
+
+        bool_mesh = (point_dist <= radius_range).astype(int)
+        bool_df = pd.DataFrame(bool_mesh, columns=col_names)
+
+        prob_band_array = (bool_df*prob).max(axis=0).replace( [4, 3, 2, 1, 0], ['High', 'Medium', 'Low', 'Very Low', 'Zero']).values
+
+        return prob_band_array
 
 
     def get_sorted_flood_probability(self, postcodes):
