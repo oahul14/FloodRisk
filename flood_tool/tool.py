@@ -106,7 +106,8 @@ class Tool(object):
             prob_df['dist'] = dist
             prob_check = prob_df[prob_df['dist'] <= prob_df['radius']]['num risk']
             if prob_check.empty:
-                return [0]
+                prob_check = pd.Series([0])
+                return prob_check
             return prob_check
         prob_band = en_df.apply(get_prob, axis=1)
         prob_band['prob'] = prob_band.apply(np.max)
