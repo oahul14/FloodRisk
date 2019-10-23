@@ -26,7 +26,7 @@ class Tool(object):
         """
         # self.postcode_file = pd.read_csv('../flood_tool/resources/postcodes.csv')
         # self.risk_file = pd.read_csv('../flood_tool/resources/flood_probability.csv')
-        # self.values_file = pd.read_csv('../flood_tool/resources/property_value.csv')
+        # self.values_file = pd.read_csv('../flood_tool/resources/property_values.csv')
         self.postcode_file = postcode_file
         self.risk_file = risk_file
         self.values_file = values_file
@@ -69,7 +69,7 @@ class Tool(object):
         return check_df.values.astype(np.float64)
 
 
-    def get_easting_northing_flood_probability_band(self, easting, northing):
+    def get_easting_northing_flood_probability(self, easting, northing):
         """Get an array of flood risk probabilities from arrays of eastings and northings.
 
         Flood risk data is extracted from the Tool flood risk file. Locations
@@ -141,7 +141,7 @@ class Tool(object):
         longitude = lat_lon[:, 1]
         easting, northing = geo.get_easting_northing_from_lat_long(\
             latitude, longitude, radians=False)
-        probability = pd.DataFrame(self.get_easting_northing_flood_probability_band\
+        probability = pd.DataFrame(self.get_easting_northing_flood_probability\
             (easting, northing))
         probability.columns = ['Probability Band']
         # import postcode
@@ -256,7 +256,7 @@ class Tool(object):
         longitude = lat_lon[:, 1]
         easting, northing = geo.get_easting_northing_from_lat_long\
             (latitude, longitude, radians=False)
-        probability_bands = self.get_easting_northing_flood_probability_band(easting, northing)
+        probability_bands = self.get_easting_northing_flood_probability(easting, northing)
         risk = pd.DataFrame(self.get_annual_flood_risk(postcodes, probability_bands))
         risk.columns = ['Flood Risk']
 
