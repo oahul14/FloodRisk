@@ -1,7 +1,9 @@
 """Locator functions to interact with geographic data"""
 import pandas as pd
 import numpy as np
+import sys
 from scipy.spatial import distance
+# sys.path.insert(1, '../flood_tool')
 import geo
 
 
@@ -24,12 +26,12 @@ class Tool(object):
         postcode_file : str, optional
             Filename of a .csv file containing property value data for postcodes.
         """
-        # self.postcode_file = pd.read_csv('../flood_tool/resources/postcodes.csv')
-        # self.risk_file = pd.read_csv('../flood_tool/resources/flood_probability.csv')
-        # self.values_file = pd.read_csv('../flood_tool/resources/property_values.csv')
-        self.postcode_file = postcode_file
-        self.risk_file = risk_file
-        self.values_file = values_file
+        self.postcode_file = pd.read_csv('../flood_tool/resources/postcodes.csv')
+        self.risk_file = pd.read_csv('../flood_tool/resources/flood_probability.csv')
+        self.values_file = pd.read_csv('../flood_tool/resources/property_values.csv')
+        # self.postcode_file = pd.read_csv(postcode_file)
+        # self.risk_file = pd.read_csv(risk_file)
+        # self.values_file = pd.read_csv(values_file)
 
     def get_lat_long(self, postcodes):
         """Get an array of WGS84 (latitude, longitude) pairs from a list of postcodes.
@@ -106,11 +108,11 @@ class Tool(object):
             prob_df['dist'] = dist
             prob_check = prob_df[prob_df['dist'] <= prob_df['radius']]['num risk']
             if prob_check.empty:
-                return [0]
+                prob_check = pd.Series(0)
             return prob_check
         prob_band = en_df.apply(get_prob, axis=1)
-        prob_band['prob'] = prob_band.apply(np.max)
-
+        prob_band = prob_band.fillna(0)
+        prob_band['prob'] = prob_band.apply(np.max, axis=1)
         return prob_band['prob'].replace([4, 3, 2, 1, 0], \
             ['High', 'Medium', 'Low', 'Very Low', 'Zero']).values
 
@@ -151,7 +153,6 @@ class Tool(object):
 
         # join two data frames
         postcode = pd.concat([postcodes, probability], axis=1)
-        print(postcode)
 
         #postcode = postcode[postcode['Probability Band'] != 'numpy.nan']
         postcode = postcode.drop_duplicates(['Postcode'], keep='last')
@@ -282,5 +283,6 @@ class Tool(object):
         # sort my column then index
         postcode = postcode.sort_values(by=['Flood Risk', 'Postcode'], ascending=[False, True])
         postcode = postcode.set_index('Postcode')
-        postcode.replace(np.nan, 0)
+        postcode.drop_duplicates()
+        postcode.dropna(how='any', inplace=True)
         return postcode
