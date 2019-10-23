@@ -1,5 +1,5 @@
 """Module implementing various geodetic transformation functions."""
-
+import numpy as np
 from numpy import array, sin, cos, tan, sqrt, pi, arctan2, floor
 
 __all__ = ['get_easting_northing_from_lat_long',
@@ -35,7 +35,7 @@ def deg(rad, dms=False):
     d = rad*(180./pi)
     if dms:
         m = 60.0*(d%1.)
-        return floor(d),  floor(m), round(60*(m%1.),4)
+        return floor(d), floor(m), round(60*(m%1.), 4)
     else:
         return d
 
@@ -59,12 +59,10 @@ wgs84 = Ellipsoid(a = 6378137,
 
 def lat_long_to_xyz(latitude, longitude, radians=False, datum=osgb36):
     """Convert locations in latitude and longitude format to 3D on specified datum.
-
     Input arrays must be of matching length.
     
     Parameters
     ----------
-
     latitude: numpy.ndarray of floats
         latitudes to convert
     latitude: numpy.ndarray of floats
@@ -73,10 +71,8 @@ def lat_long_to_xyz(latitude, longitude, radians=False, datum=osgb36):
         True if input is in radians, otherwise degrees assumed.
     datum: geo.Ellipsoid, optional
         Geodetic ellipsoid to work on
-
     Returns
     -------
-
     numpy.ndarray
         Locations in 3D (body Cartesian) coordinates.
     """
@@ -84,7 +80,8 @@ def lat_long_to_xyz(latitude, longitude, radians=False, datum=osgb36):
         latitude = rad(latitude)
         longitude = rad(longitude)
 
-    nu = datum.a*datum.F_0/sqrt(1-datum.e2*sin(latitude)**2)
+    #nu = datum.a*datum.F_0/sqrt(1-datum.e2*sin(latitude)**2)
+    nu = datum.a/sqrt(1-datum.e2*sin(latitude)**2)
   
     return array(((nu+datum.H)*cos(latitude)*cos(longitude),
                   (nu+datum.H)*cos(latitude)*sin(longitude),
@@ -92,12 +89,10 @@ def lat_long_to_xyz(latitude, longitude, radians=False, datum=osgb36):
 
 def xyz_to_lat_long(x, y, z, radians=False, datum=osgb36):
     """Convert locations in 3D to latitude longitude format on specified datum.
-
     Input arrays must be of matching length.
     
     Parameters
     ----------
-
     x: numpy.ndarray of floats
         x coordinate in body Cartesian 3D
     y: numpy.ndarray of floats
@@ -108,10 +103,8 @@ def xyz_to_lat_long(x, y, z, radians=False, datum=osgb36):
         True if output should be in radians, otherwise degrees assumed.
     datum: geo.Ellipsoid, optional
         Geodetic ellipsoid to work on
-
     Returns
     -------
-
     latitude: numpy.ndarray
         Locations latitudes.
     longitude: numpy.ndarray
@@ -127,8 +120,10 @@ def xyz_to_lat_long(x, y, z, radians=False, datum=osgb36):
 
     ### Apply a few iterations of Newton Rapheson
     for _ in range(6):
-        nu = datum.a*datum.F_0/sqrt(1-datum.e2*sin(latitude)**2)
-        dnu = -datum.a*datum.F_0*cos(latitude)*sin(latitude)/(1-datum.e2*sin(latitude)**2)**1.5
+        # nu = datum.a*datum.F_0/sqrt(1-datum.e2*sin(latitude)**2)
+        nu = datum.a/sqrt(1-datum.e2*sin(latitude)**2)
+        # dnu = -datum.a*datum.F_0*cos(latitude)*sin(latitude)/(1-datum.e2*sin(latitude)**2)**1.5
+        dnu = -datum.a*cos(latitude)*sin(latitude)/(1-datum.e2*sin(latitude)**2)**1.5
 
         f0 = (z + datum.e2*nu*sin(latitude))/p - tan(latitude)
         f1 = datum.e2*(nu**cos(latitude)+dnu*sin(latitude))/p - 1.0/cos(latitude)**2
@@ -162,11 +157,37 @@ WGS84toOSGB36transform = HelmertTransform(20.4894e-6,
                              array([-446.448, 125.157, -542.060]))
 
 
-def WGS84toOSGB36(latitude, longitude, radians=False):
-    """ Wrapper to transform (latitude, longitude) pairs
-    from GPS to OS datum."""
 
-    raise NotImplementedError    
+def WGS84toOSGB36(latitude, longitude, radians=False):
+    """ Wrapper to transform (latitude, longitude) pairs from GPS to OS datum.
+    
+    Parameters
+    ---------
+    latitude: numpy.ndarray of floats
+        latitudes to convert
+    longitudes: numpy.ndarray of floats
+        longitudes to convert
+    radians: bool, optional
+        True if input is in radians, otherwise degrees assumed.
+    
+    Returns
+    -------
+    latitudes: numpy.ndarray of floats
+        OS latitudes in deg
+    longitudes: numpy.ndarray of floats
+        OS longitude in deg
+    """
+    if not radians:
+        latitude = rad(np.array(latitude))
+        longitude = rad(np.array(longitude))
+    #convert WGS lat long to WGS X 
+    Xwgs = lat_long_to_xyz(latitude, longitude, radians=True, datum=wgs84)
+    #convert WGS X to OSGB X
+    Xosgb = WGS84toOSGB36transform(Xwgs) 
+    #convert Xosgb to OSGB lat long
+    Lat_OS, Long_OS = xyz_to_lat_long(Xosgb[0], Xosgb[1], Xosgb[2], radians=True, datum=osgb36)
+
+    return Lat_OS, Long_OS 
 
 
 def get_easting_northing_from_lat_long(latitude, longitude, radians=False):
@@ -183,17 +204,52 @@ def get_easting_northing_from_lat_long(latitude, longitude, radians=False):
     
     Returns
     -------
-
     easting : ndarray of floats
               OS Eastings of input
     northing : ndarray of floats
               OS Northings of input
-
     References
     ----------
-
     A guide to coordinate systems in Great Britain 
     (https://webarchive.nationalarchives.gov.uk/20081023180830/http://www.ordnancesurvey.co.uk/oswebsite/gps/information/coordinatesystemsinfo/guidecontents/index.html)
     """ 
+    # latitude = latitude.astype(np.float64)
+    # longitude = longitude.astype(np.float64)
+    #unit conversion
+    if not radians:
+        latitude = rad(np.array(latitude))
+        longitude = rad(np.array(longitude))
 
-    raise NotImplementedError
+    #convert WGS lat long to OS lat long
+    Lat_OS, Long_OS = WGS84toOSGB36(latitude, longitude, radians=True)
+    Lat_OS = np.array(Lat_OS)
+    Long_OS = np.array(Long_OS)
+    #convert OS lat long to Easting Northing
+    rho = osgb36.a*osgb36.F_0*(1-osgb36.e2)/((1-osgb36.e2*sin(Lat_OS)**2)**(1.5))
+    v = osgb36.a*osgb36.F_0/sqrt(1-osgb36.e2*sin(Lat_OS)**2)
+    eta = sqrt(v/rho - 1)
+    M = osgb36.b*osgb36.F_0*( 
+        (1 + osgb36.n + 5/4*osgb36.n**2 + 5/4*osgb36.n**3)*(Lat_OS - osgb36.phi_0) - 
+        (3*osgb36.n + 3*osgb36.n**2 + 21/8*osgb36.n**3)*sin(Lat_OS - osgb36.phi_0)*
+        cos(Lat_OS + osgb36.phi_0) + (15/8*osgb36.n**2 + 15/8*osgb36.n**3)*
+        sin(2*(Lat_OS - osgb36.phi_0))*cos(2*(Lat_OS + osgb36.phi_0)) - 35/24*
+        osgb36.n**3*sin(3*(Lat_OS - osgb36.phi_0))*cos(3*(Lat_OS + osgb36.phi_0))
+        )
+    I = M + osgb36.N_0
+    II = v/2*sin(Lat_OS)*cos(Lat_OS)
+    III = v/24*sin(Lat_OS)*cos(Lat_OS)**3*(5 - tan(Lat_OS)**2 + 9*eta**2)
+    IIIA = v/720*sin(Lat_OS)*cos(Lat_OS)**5*(61 - 58*tan(Lat_OS)**2 + tan(Lat_OS)**4)
+    IV = v*cos(Lat_OS)
+    V = v/6*cos(Lat_OS)**3*(v/rho - tan(Lat_OS)**2)
+    VI = v/120*cos(Lat_OS)**5*(5 - 18*tan(Lat_OS)**2 + tan(Lat_OS)**4 + 14*eta**2 - 
+        58*tan(Lat_OS)**2*eta**2 )
+    
+    E_OS = osgb36.E_0 + IV*(Long_OS - osgb36.lam_0) + V*(Long_OS - osgb36.lam_0)**3 + VI*(
+        (Long_OS - osgb36.lam_0)**5)
+    N_OS = I + II*(Long_OS - osgb36.lam_0)**2 + III*(Long_OS - osgb36.lam_0)**4 + IIIA*(
+        (Long_OS - osgb36.lam_0)**6)
+    return E_OS, N_OS 
+
+
+# results = (get_easting_northing_from_lat_long(np.array([51.19707,51.271972]),np.array([1.385194,0.565622])))
+# print(results[0]
