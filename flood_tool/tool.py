@@ -97,8 +97,8 @@ class Tool(object):
         prob_df = self.risk_file
         prob_df['num risk'] = prob_df['prob_4band']\
             .replace(['High', 'Medium', 'Low', 'Very Low'], [4, 3, 2, 1])
-        x_easting = prob_df['x_easting'].values
-        y_northing = prob_df['y_northing'].values
+        x_easting = prob_df['X'].values
+        y_northing = prob_df['Y'].values
         xy_ndarray = np.stack([x_easting, y_northing], axis=1)
         def get_prob(en_df_row):
             dist = distance.cdist(np.array([[en_df_row['Easting'], en_df_row['Northing']]])\
