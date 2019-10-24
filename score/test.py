@@ -38,14 +38,14 @@ def test_get_easting_northing_from_lat_long(data, testdb, flood_tool, record_pro
 
     name = 'get_easting_northing_from_lat_long'
 
-    rel = data[name]['tolerance']
+    tol = data[name]['tolerance']
 
     output = np.array([[298169, 519487]])
     inputs = [54.560333], [-3.576252]
     time, result = timing(flood_tool.get_easting_northing_from_lat_long,
                           *inputs)
 
-    matches = [r==approx(o, rel=rel) for r, o in zip(np.array(result).T, output)]
+    matches = [r==approx(o, abs=tol) for r, o in zip(np.array([r.ravel() for r in result]).T, output)]
     record_property('single_lookup', (time, matches))
 
     input_headings = data[name]['input headings']
@@ -59,7 +59,7 @@ def test_get_easting_northing_from_lat_long(data, testdb, flood_tool, record_pro
     time, result = timing(flood_tool.get_easting_northing_from_lat_long, *args)
 
     matches = [r == approx(np.array(o),
-                           rel=rel) for r, o in zip(np.array(result).T,output)]
+                           abs=tol) for r, o in zip(np.array(result).T,output)]
     record_property('multiple_lookup', (time, matches))
 
     record_xml_attribute('points', calculate_score(time, matches,
@@ -128,9 +128,7 @@ def test_get_easting_northing_flood_probability(data, testdb, tool, record_prope
 
     name = 'get_easting_northing_flood_probability'
 
-    rel = data[name]['tolerance']
-
-    output = ['No Risk']
+    output = ['Zero']
     inputs = [[298169], [519487]]
     time, result = timing(getattr(tool, name),
                           *inputs)
@@ -191,8 +189,8 @@ def test_get_flood_cost(data, testdb, tool,
 
     rel = data[name]['tolerance']
 
-    output = np.array([2505041.36])
-    time, result = timing(getattr(tool, name), ['ME124JS'])
+    output = np.array([4646599.42])
+    time, result = timing(getattr(tool, name), ['TN8 6AB'])
     matches = [r==approx(o) for r, o in zip(result, output)]
     record_property('single_postcode_lookup',
                     (time, matches))
@@ -221,8 +219,8 @@ def test_get_annual_flood_risk(data, testdb, tool,
 
     rel = data[name]['tolerance']
 
-    output = np.array([12525.2068])
-    time, result = timing(getattr(tool, name), ['ME124JS'], ['High'])
+    output = np.array([193.506606])
+    time, result = timing(getattr(tool, name), ['DA1 5NU'], ['Very Low'])
     matches = [r==approx(o) for r, o in zip(result, output)]
     record_property('single_postcode_lookup',
                     (time, matches))
