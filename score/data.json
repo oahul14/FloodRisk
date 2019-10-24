@@ -23,7 +23,7 @@
 					   "idx2" : 500,
 					   "input headings" : ["Latitude", "Longitude"],
 					   "output headings" : ["Easting", "Northing"],
-					   "absolute_tolerance" : 5,
+					   "tolerance" : 1.0e-8,
 					   "score" : 500
                     },
      "get_easting_northing_flood_probability": {"idx1" : 0,
