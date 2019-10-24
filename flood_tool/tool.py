@@ -34,6 +34,23 @@ class Tool(object):
         self.risk_file = pd.read_csv(risk_file)
         self.values_file = pd.read_csv(values_file)
 
+    def clean_postcodes_to_7(self, postcode):
+        '''Clean postcodes format to universal length of 7''' 
+        if len(postcode) == 8 and ' ' in postcode:
+            return postcode.replace(' ', '')
+        elif len(postcode) == 6 and ' ' not in postcode:
+            return postcode[:3]+' '+postcode[3:]
+        elif len(postcode) == 6 and ' ' in postcode:
+            return postcode.replace(' ', '  ')
+        return postcode
+    
+    def clean_postcodes_to_space(self, postcode):
+        if len(postcode) == 7 and ' ' not in postcode:
+            return postcode[:4]+' '+postcode[4:]
+        if len(postcode) == 5 and '  ' in postcode:
+            return postcode.replace('  ', ' ')
+        return postcode
+
     def get_lat_long(self, postcodes):
         """Get an array of WGS84 (latitude, longitude) pairs from a list of postcodes.
 
@@ -50,17 +67,10 @@ class Tool(object):
             Array of Nx2 (latitude, longitdue) pairs for the input postcodes.
             Invalid postcodes return [`numpy.nan`, `numpy.nan`].
         """
-        def clean_postcodes(postcode):
-            if len(postcode) == 8 and ' ' in postcode:
-                return postcode.replace(' ', '')
-            elif len(postcode) == 6 and ' ' not in postcode:
-                return postcode[:3]+' '+postcode[3:]
-            return postcode
-
         postcode_base = self.postcode_file
 
         postcodes = np.char.upper(np.array(postcodes).astype(str))
-        postcodes = np.vectorize(clean_postcodes)(postcodes)
+        postcodes = np.vectorize(self.clean_postcodes_to_7)(postcodes)
         select_df = postcode_base[postcode_base.isin(postcodes)['Postcode']]
 
         select_df = select_df.set_index(['Postcode'])
@@ -148,14 +158,9 @@ class Tool(object):
             (easting, northing))
         probability.columns = ['Probability Band']
         # import postcode
-        def clean_postcodes(postcode):
-            if len(postcode) == 8 and ' ' in postcode:
-                return postcode.replace(' ', '')
-            elif len(postcode) == 6 and ' ' not in postcode:
-                return postcode[:3]+' '+postcode[3:]
-            return postcode
+
         postcodes = np.char.upper(np.array(postcodes).astype(str))
-        postcodes = np.vectorize(clean_postcodes)(postcodes)
+        postcodes = np.vectorize(self.clean_postcodes_to_7)(postcodes)
         postcodes = pd.DataFrame(postcodes)
         postcodes.columns = ['Postcode']
 
@@ -194,22 +199,13 @@ class Tool(object):
 
         property_base = self.values_file
         postcode_base = self.postcode_file
-        def clean_postcodes_del(postcode):
-            if len(postcode) == 8 and ' ' in postcode:
-                return postcode.replace(' ', '')
-            elif len(postcode) == 6 and ' ' not in postcode:
-                return postcode[:3]+' '+postcode[3:]
-            return postcode
-        def clean_postcodes_add(postcode):
-            if len(postcode) == 7 and ' ' not in postcode:
-                return postcode[:4]+' '+postcode[4:]
-            return postcode
+        # postcode_base['Postcode'] = postcode_base['Postcode'].apply(self.clean_postcodes_to_7)
 
         postcodes = np.char.upper(np.array(postcodes).astype(str))
-        postcodes = np.vectorize(clean_postcodes_del)(postcodes)
+        postcodes = np.vectorize(self.clean_postcodes_to_7)(postcodes)
         postcodes[np.isin(postcodes, postcode_base['Postcode'], invert=True)] = np.nan
         postcodes = np.char.upper(np.array(postcodes).astype(str))
-        postcodes = np.vectorize(clean_postcodes_add)(postcodes)
+        postcodes = np.vectorize(self.clean_postcodes_to_space)(postcodes)
         select_df = property_base[property_base.isin(postcodes)['Postcode']]\
             [['Postcode', 'Total Value']]
         select_df = select_df.set_index(['Postcode'])
@@ -219,7 +215,6 @@ class Tool(object):
         check_df = pd.concat([postcodes_df, value_df]).set_index([0])
         check_df['Total Value'] = 0
         check_df.update(select_df)
-        print(check_df)
         flood_cost = check_df.values.reshape(len(postcodes),)
 
         return flood_cost
@@ -273,14 +268,8 @@ class Tool(object):
         risk.columns = ['Flood Risk']
 
         # import postcode
-        def clean_postcodes(postcode):
-            if len(postcode) == 8 and ' ' in postcode:
-                return postcode.replace(' ', '')
-            elif len(postcode) == 6 and ' ' not in postcode:
-                return postcode[:3]+' '+postcode[3:]
-            return postcode
         postcodes = np.char.upper(np.array(postcodes).astype(str))
-        postcodes = np.vectorize(clean_postcodes)(postcodes)
+        postcodes = np.vectorize(self.clean_postcodes_to_7)(postcodes)
         postcodes = pd.DataFrame(postcodes)
         postcodes.columns = ['Postcode']
 
