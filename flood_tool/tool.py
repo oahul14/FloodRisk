@@ -156,15 +156,6 @@ class Tool(object):
         postcode = postcode[postcode['Probability Band'] != 'numpy.nan']
         postcode = postcode.drop_duplicates(['Postcode'], keep='last')
 
-        # format the postcode
-        postcode['Postcode'] = postcode['Postcode'].astype(str)
-        postcode['outward'] = postcode['Postcode'].apply(lambda x: x[0:4])
-        postcode['outward'] = postcode['outward'].str.replace(" ", "")
-        postcode['inward'] = postcode['Postcode'].apply(lambda x: x[4:7])
-        postcode['Postcode'] = postcode['outward'] + ' ' + postcode['inward']
-        postcode = postcode.drop('outward', 1)
-        postcode = postcode.drop('inward', 1)
-
         # custom sorting
         postcode['Probability Band'] = pd.Categorical(postcode['Probability Band'], \
             ['High', 'Medium', 'Low', 'Very Low', 'No Risk'])
