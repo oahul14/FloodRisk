@@ -1,7 +1,9 @@
 """Locator functions to interact with geographic data"""
 import pandas as pd
 import numpy as np
+import sys
 from scipy.spatial import distance
+# sys.path.insert(1, '../flood_tool')
 from . import geo
 
 
@@ -24,7 +26,9 @@ class Tool(object):
         postcode_file : str, optional
             Filename of a .csv file containing property value data for postcodes.
         """
-        
+        # self.postcode_file = pd.read_csv('/System/Volumes/Data/Users/luhao/OneDrive - Imperial College London/acse-4-flood-tool-nene/flood_tool/resources/postcodes.csv')
+        # self.risk_file = pd.read_csv('/System/Volumes/Data/Users/luhao/OneDrive - Imperial College London/acse-4-flood-tool-nene/flood_tool/resources/flood_probability.csv')
+        # self.values_file = pd.read_csv('/System/Volumes/Data/Users/luhao/OneDrive - Imperial College London/acse-4-flood-tool-nene/flood_tool/resources/property_values.csv')
         self.postcode_file = pd.read_csv(postcode_file)
         self.risk_file = pd.read_csv(risk_file)
         self.values_file = pd.read_csv(values_file)
@@ -143,9 +147,16 @@ class Tool(object):
             (easting, northing))
         probability.columns = ['Probability Band']
         # import postcode
+        def clean_postcodes(postcode):
+            if len(postcode) == 8 and ' ' in postcode:
+                return postcode.replace(' ', '')
+            elif len(postcode) == 6 and ' ' not in postcode:
+                return postcode[:3]+' '+postcode[3:]
+            return postcode
+        postcodes = np.char.upper(np.array(postcodes).astype(str))
+        postcodes = np.vectorize(clean_postcodes)(postcodes)
         postcodes = pd.DataFrame(postcodes)
         postcodes.columns = ['Postcode']
-
 
         # join two data frames
         postcode = pd.concat([postcodes, probability], axis=1)
@@ -153,22 +164,14 @@ class Tool(object):
         #postcode = postcode[postcode['Probability Band'] != 'numpy.nan']
         postcode = postcode.drop_duplicates(['Postcode'], keep='last')
 
-        # format the postcode
-        postcode['Postcode'] = postcode['Postcode'].astype(str)
-        postcode['outward'] = postcode['Postcode'].apply(lambda x: x[0:4])
-        postcode['outward'] = postcode['outward'].str.replace(" ", "")
-        postcode['inward'] = postcode['Postcode'].apply(lambda x: x[4:7])
-        postcode['Postcode'] = postcode['outward'] + ' ' + postcode['inward']
-        postcode = postcode.drop('outward', 1)
-        postcode = postcode.drop('inward', 1)
-
         # custom sorting
         postcode['Probability Band'] = pd.Categorical(postcode['Probability Band'], \
             ['High', 'Medium', 'Low', 'Very Low', 'Zero'])
         # sort my column then index
         postcode = postcode.sort_values(by=['Probability Band', 'Postcode'])
         postcode = postcode.set_index('Postcode')
-
+        postcode.drop_duplicates()
+        postcode.dropna(how='any', inplace=True)
         return postcode
 
 
@@ -188,10 +191,7 @@ class Tool(object):
             Invalid postcodes return `numpy.nan`.
         """
 
-        #Postcode_test = ','.join(Postcode)
         property_base = self.values_file
-
-
         def clean_postcodes(postcode):
             if len(postcode) == 7 and ' ' not in postcode:
                 return postcode[:4]+' '+postcode[4:]
@@ -258,6 +258,14 @@ class Tool(object):
         risk.columns = ['Flood Risk']
 
         # import postcode
+        def clean_postcodes(postcode):
+            if len(postcode) == 8 and ' ' in postcode:
+                return postcode.replace(' ', '')
+            elif len(postcode) == 6 and ' ' not in postcode:
+                return postcode[:3]+' '+postcode[3:]
+            return postcode
+        postcodes = np.char.upper(np.array(postcodes).astype(str))
+        postcodes = np.vectorize(clean_postcodes)(postcodes)
         postcodes = pd.DataFrame(postcodes)
         postcodes.columns = ['Postcode']
 
@@ -267,18 +275,9 @@ class Tool(object):
         postcode = postcode[postcode['Postcode'] != 'numpy.nan']
         postcode = postcode.drop_duplicates(['Postcode'], keep='last')
 
-        # format the postcode
-        postcode['Postcode'] = postcode['Postcode'].astype(str)
-        postcode['outward'] = postcode['Postcode'].apply(lambda x: x[0:4])
-        postcode['outward'] = postcode['outward'].str.replace(" ", "")
-        postcode['inward'] = postcode['Postcode'].apply(lambda x: x[4:7])
-        postcode['Postcode'] = postcode['outward'] + ' ' + postcode['inward']
-        postcode = postcode.drop('outward', 1)
-        postcode = postcode.drop('inward', 1)
-
         # sort my column then index
         postcode = postcode.sort_values(by=['Flood Risk', 'Postcode'], ascending=[False, True])
         postcode = postcode.set_index('Postcode')
-        postcode.drop_duplicates()
-        postcode.dropna(how='any', inplace=True)
+        # postcode.dropna(how='any', inplace=True)
+        postcode.fillna(0, inplace=True)
         return postcode
