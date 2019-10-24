@@ -1,10 +1,8 @@
 """Locator functions to interact with geographic data"""
 import pandas as pd
 import numpy as np
-import sys
 from scipy.spatial import distance
-# sys.path.insert(1, '../flood_tool')
-import geo
+from . import geo
 
 
 __all__ = ['Tool']
@@ -26,12 +24,10 @@ class Tool(object):
         postcode_file : str, optional
             Filename of a .csv file containing property value data for postcodes.
         """
-        self.postcode_file = pd.read_csv('../flood_tool/resources/postcodes.csv')
-        self.risk_file = pd.read_csv('../flood_tool/resources/flood_probability.csv')
-        self.values_file = pd.read_csv('../flood_tool/resources/property_values.csv')
-        # self.postcode_file = pd.read_csv(postcode_file)
-        # self.risk_file = pd.read_csv(risk_file)
-        # self.values_file = pd.read_csv(values_file)
+        
+        self.postcode_file = pd.read_csv(postcode_file)
+        self.risk_file = pd.read_csv(risk_file)
+        self.values_file = pd.read_csv(values_file)
 
     def get_lat_long(self, postcodes):
         """Get an array of WGS84 (latitude, longitude) pairs from a list of postcodes.
