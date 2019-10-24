@@ -5,6 +5,7 @@ import sys
 from scipy.spatial import distance
 # sys.path.insert(1, '../flood_tool')
 from . import geo
+# import geo
 
 
 __all__ = ['Tool']
@@ -192,22 +193,36 @@ class Tool(object):
         """
 
         property_base = self.values_file
-        def clean_postcodes(postcode):
+        postcode_base = self.postcode_file
+        def clean_postcodes_del(postcode):
+            if len(postcode) == 8 and ' ' in postcode:
+                return postcode.replace(' ', '')
+            elif len(postcode) == 6 and ' ' not in postcode:
+                return postcode[:3]+' '+postcode[3:]
+            return postcode
+        def clean_postcodes_add(postcode):
             if len(postcode) == 7 and ' ' not in postcode:
                 return postcode[:4]+' '+postcode[4:]
             return postcode
+
         postcodes = np.char.upper(np.array(postcodes).astype(str))
-        postcodes = np.vectorize(clean_postcodes)(postcodes)
+        postcodes = np.vectorize(clean_postcodes_del)(postcodes)
+        postcodes[np.isin(postcodes, postcode_base['Postcode'], invert=True)] = np.nan
+        postcodes = np.char.upper(np.array(postcodes).astype(str))
+        postcodes = np.vectorize(clean_postcodes_add)(postcodes)
         select_df = property_base[property_base.isin(postcodes)['Postcode']]\
             [['Postcode', 'Total Value']]
-        select_df = select_df.set_index(['Postcode'])*0.05
+        select_df = select_df.set_index(['Postcode'])
 
         value_df = pd.DataFrame(columns=(['Total Value']))
         postcodes_df = pd.DataFrame(postcodes)
         check_df = pd.concat([postcodes_df, value_df]).set_index([0])
+        check_df['Total Value'] = 0
         check_df.update(select_df)
+        print(check_df)
+        flood_cost = check_df.values.reshape(len(postcodes),)
 
-        return check_df.values.reshape(len(postcodes),)
+        return flood_cost
 
     def get_annual_flood_risk(self, postcodes, probability_bands):
         """Get an array of estimated annual flood risk in pounds sterling per year of a flood
@@ -230,7 +245,7 @@ class Tool(object):
         .values.reshape(len(probability_bands),)
         flood_cost = self.get_flood_cost(postcodes)
 
-        return flood_cost*probability_bands
+        return flood_cost*probability_bands*0.05
 
     def get_sorted_annual_flood_risk(self, postcodes):
         """Get a sorted pandas DataFrame of flood risks.
@@ -278,6 +293,5 @@ class Tool(object):
         # sort my column then index
         postcode = postcode.sort_values(by=['Flood Risk', 'Postcode'], ascending=[False, True])
         postcode = postcode.set_index('Postcode')
-        # postcode.dropna(how='any', inplace=True)
-        postcode.fillna(0, inplace=True)
+        postcode.dropna(how='any', inplace=True)
         return postcode
