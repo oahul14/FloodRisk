@@ -169,6 +169,8 @@ class Tool(object):
         postcode['Probability Band'] = pd.Categorical(postcode['Probability Band'], \
             ['High', 'Medium', 'Low', 'Very Low', 'No Risk'])
         # sort my column then index
+        postcode.drop_duplicates()
+        postcode.dropna(how='any', inplace=True)
         postcode = postcode.sort_values(by=['Probability Band', 'Postcode'])
         postcode = postcode.set_index('Postcode')
 
