@@ -113,7 +113,7 @@ class Tool(object):
         prob_band = prob_band.fillna(0)
         prob_band['prob'] = prob_band.apply(np.max, axis=1)
         return prob_band['prob'].replace([4, 3, 2, 1, 0], \
-            ['High', 'Medium', 'Low', 'Very Low', 'Zero']).values
+            ['High', 'Medium', 'Low', 'Very Low', 'No Risk']).values
 
     def get_sorted_flood_probability(self, postcodes):
         """Get an array of flood risk probabilities from a sequence of postcodes.
@@ -167,7 +167,7 @@ class Tool(object):
 
         # custom sorting
         postcode['Probability Band'] = pd.Categorical(postcode['Probability Band'], \
-            ['High', 'Medium', 'Low', 'Very Low', 'Zero'])
+            ['High', 'Medium', 'Low', 'Very Low', 'No Risk'])
         # sort my column then index
         postcode = postcode.sort_values(by=['Probability Band', 'Postcode'])
         postcode = postcode.set_index('Postcode')
@@ -229,7 +229,7 @@ class Tool(object):
             Invalid postcodes return `numpy.nan`.
         """
         probability_bands = pd.DataFrame(probability_bands).replace\
-        (['High', 'Medium', 'Low', 'Very Low', 'Zero'], [0.1, 0.02, 0.01, 0.001, 0])\
+        (['High', 'Medium', 'Low', 'Very Low', 'No Risk'], [0.1, 0.02, 0.01, 0.001, 0])\
         .values.reshape(len(probability_bands),)
         flood_cost = self.get_flood_cost(postcodes)
 
