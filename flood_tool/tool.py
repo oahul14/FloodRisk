@@ -3,8 +3,7 @@ import pandas as pd
 import numpy as np
 import sys
 from scipy.spatial import distance
-sys.path.insert(1, '../flood_tool')
-import geo
+from . import geo
 
 
 __all__ = ['Tool']
