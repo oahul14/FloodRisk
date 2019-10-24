@@ -153,7 +153,7 @@ class Tool(object):
         # join two data frames
         postcode = pd.concat([postcodes, probability], axis=1)
 
-        #postcode = postcode[postcode['Probability Band'] != 'numpy.nan']
+        postcode = postcode[postcode['Probability Band'] != 'numpy.nan']
         postcode = postcode.drop_duplicates(['Postcode'], keep='last')
 
         # format the postcode
