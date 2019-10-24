@@ -91,29 +91,6 @@ class Tool(object):
         numpy.ndarray of strs
             numpy array of flood probability bands corresponding to input locations.
         """
-#         # easting and northing are two lists
-#         easting = np.array(easting)
-#         northing = np.array(northing)
-#         en_df = pd.DataFrame({'Easting': easting, 'Northing': northing})
-#         prob_df = self.risk_file
-#         prob_df['num risk'] = prob_df['prob_4band']\
-#             .replace(['High', 'Medium', 'Low', 'Very Low'], [4, 3, 2, 1])
-#         x_easting = prob_df['X'].values
-#         y_northing = prob_df['Y'].values
-#         xy_ndarray = np.stack([x_easting, y_northing], axis=1)
-#         def get_prob(en_df_row):
-#             dist = distance.cdist(np.array([[en_df_row['Easting'], en_df_row['Northing']]])\
-#                 , xy_ndarray).reshape(len(xy_ndarray),)
-#             prob_df['dist'] = dist
-#             prob_check = prob_df[prob_df['dist'] <= prob_df['radius']]['num risk']
-#             if prob_check.empty:
-#                 prob_check = pd.Series(0)
-#             return prob_check
-#         prob_band = en_df.apply(get_prob, axis=1)
-#         prob_band = prob_band.fillna(0)
-#         prob_band['prob'] = prob_band.apply(np.max, axis=1)
-#         return prob_band['prob'].replace([4, 3, 2, 1, 0], \
-#             ['High', 'Medium', 'Low', 'Very Low', 'Zero']).values
         # easting and northing are two lists
         easting = np.array(easting)
         northing = np.array(northing)
@@ -130,11 +107,11 @@ class Tool(object):
             prob_df['dist'] = dist
             prob_check = prob_df[prob_df['dist'] <= prob_df['radius']]['num risk']
             if prob_check.empty:
-                return [0]
+                prob_check = pd.Series(0)
             return prob_check
         prob_band = en_df.apply(get_prob, axis=1)
-        prob_band['prob'] = prob_band.apply(np.max)
-
+        prob_band = prob_band.fillna(0)
+        prob_band['prob'] = prob_band.apply(np.max, axis=1)
         return prob_band['prob'].replace([4, 3, 2, 1, 0], \
             ['High', 'Medium', 'Low', 'Very Low', 'Zero']).values
 
