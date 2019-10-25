@@ -8,7 +8,12 @@ This tool calculates flood probabilities and risks for postcodes in England.
 
 ### Installation Guide
 
-*To be written*
+* Numpy
+* Scipy
+* Pandas
+* Pytest
+* Pytest-timeout
+* Matplotlib
 
 ### User instructions
 
