@@ -81,3 +81,11 @@ def test_get_easting_northing_from_lat_long():
                                                            longitude)) \
                                      == approx(np.array((e,n)),
                                                rel=1.0e-5)
+    
+def test_get_easting_northing_from_lat_long2():
+    results = (geo.get_easting_northing_from_lat_long(np.array([51.19707,51.271972]),np.array([1.385194,0.565622])))
+    East =  np.array([636604.0259277,579062.97892721])
+    North = np.array([149652.59109525, 155661.95747473])
+
+    assert np.isclose(results[0], East).all()
+    assert np.isclose(results[1], North).all()   
