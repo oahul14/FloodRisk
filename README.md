@@ -8,15 +8,15 @@ This tool calculates flood probabilities and risks for postcodes in England.
 
 ### Installation Guide
 
-* matplotlib
-* numpy
-* pandas
-* pytest
-* scipy
+*To be written*
 
 ### User instructions
 
+There are two main modules in this software package:
 
+The first module computes flood probability and flood risk using location from inputed postcode.
+
+The second mole returns live flood warning in the past 24 hours based on inputed postcode as well.
 
 ### Documentation
 
