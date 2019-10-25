@@ -12,11 +12,16 @@ This tool calculates flood probabilities and risks for postcodes in England.
 
 ### User instructions
 
+#### Extension 3
 There are two main modules in this software package:
 
 The first module computes flood probability and flood risk using location from inputed postcode.
 
 The second mole returns live flood warning in the past 24 hours based on inputed postcode as well.
+
+#### Extension 4
+Extension 4 in Task_4_plot.py and animated_rainfall.py basically do the same thing to print out animated rainfall data. The data are categorized into rainfall stations for every 15 minutes and showed according to their easting/northing coordinates.
+
 
 ### Documentation
 
